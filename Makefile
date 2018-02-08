@@ -2,7 +2,7 @@
 #                     SRC                    #
 ##############################################
 # All directories to build (inside src/)
-DIR := 
+DIR := Automate
 # Files to exclude
 EXCLUDED_FILE := 
 # Directories with src/ prefix
