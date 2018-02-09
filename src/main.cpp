@@ -15,27 +15,13 @@ int main() {
     constexpr unsigned state_alive = 1;
     constexpr unsigned state_dead = 0;
 
-    constexpr unsigned width = 400;
-    constexpr unsigned height = 400;
-    constexpr unsigned scale = 2;
+    constexpr unsigned width = 200;
+    constexpr unsigned height = 200;
+    constexpr unsigned scale = 4;
 
-    Automate app(width, height, state_dead);
-
-    app.define_rule(state_dead, 
-    [] (Automate::CellLookup const& lookup) {
-        unsigned counter = 0;
-        lookup.arounds().for_each([&counter] (unsigned c) { counter += c; });
-        return counter == 3 ? state_alive : state_dead;
-    });
-
-    app.define_rule(state_alive, 
-    [] (Automate::CellLookup const& lookup) {
-        unsigned counter = 0;
-        lookup.arounds().for_each([&counter] (unsigned c) { counter += c; });
-        return counter == 3 || counter == 2 ? state_alive : state_dead;
-    });
-
-    app.set_all([] (int, int) { return std::rand() % 10 == 0 ? state_alive : state_dead; });
+    Automate::LangtonAnt ant;
+    Automate app = Automate::langton_ant(width, height, ant);
+    app.define_wrap_mode(Automate::WrapMode::Both);
 
     Grid grid; 
     grid.define_color(state_alive, sf::Color::Black);
@@ -53,12 +39,13 @@ int main() {
         {
             if (event.type == sf::Event::Closed)
                 window.close();
-
-            if (event.type == sf::Event::KeyReleased && event.key.code == sf::Keyboard::Space) {
-                app.update_all();
-                grid.update(app);
-            }
         }
+        app.update_selected({{ant.x, ant.y}});
+        app.update_selected({{ant.x, ant.y}});
+        app.update_selected({{ant.x, ant.y}});
+        app.update_selected({{ant.x, ant.y}});
+        app.update_selected({{ant.x, ant.y}});
+        grid.update(app, ant.x - 5, ant.y - 5, 11, 11);
 
         window.clear();
         window.draw(grid);

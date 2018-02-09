@@ -64,9 +64,10 @@ void Automate::update_all() {
 
 void Automate::update_selected(std::vector<sf::Vector2i> const& selected) {
     std::vector<unsigned> new_cells(cells);
-    std::transform(selected.begin(), selected.end(), new_cells.begin(), [this] (sf::Vector2i const& coord) {
-        return this->rules[this->get(coord.x, coord.y)](Automate::CellLookup(*this, *this->from_coords(coord.x, coord.y))); // TODO : check rule exists
-    });
+    for(auto const& coords : selected) {
+        auto id = *from_coords(coords.x, coords.y);
+        new_cells[id] = rules[get(coords.x, coords.y)](Automate::CellLookup(*this, id)); // TODO : check rule exists
+    }
     cells = std::move(new_cells);
 }
 
@@ -140,6 +141,65 @@ std::optional<unsigned> Automate::from_coords(int x, int y) const {
 unsigned Automate::get(int x, int y) const {
     auto id = from_coords(x, y);
     return id ? cells[*id] : default_state;
+}
+
+Automate Automate::game_of_life(unsigned width, unsigned height) {
+    constexpr unsigned state_alive = 1;
+    constexpr unsigned state_dead = 0;
+
+    Automate app(width, height, state_dead);
+
+    app.define_rule(state_dead, 
+    [] (Automate::CellLookup const& lookup) {
+        unsigned counter = 0;
+        lookup.arounds().for_each([&counter] (unsigned c) { counter += c; });
+        return counter == 3 ? state_alive : state_dead;
+    });
+
+    app.define_rule(state_alive, 
+    [] (Automate::CellLookup const& lookup) {
+        unsigned counter = 0;
+        lookup.arounds().for_each([&counter] (unsigned c) { counter += c; });
+        return counter == 3 || counter == 2 ? state_alive : state_dead;
+    });
+
+    return app;
+}
+
+Automate Automate::langton_ant(unsigned width, unsigned height, Automate::LangtonAnt& ant) {
+    Automate app(width, height, 0);
+
+    ant.x = width / 2;
+    ant.y = height / 2;
+    ant.dir = 0; // North
+
+    app.define_rule(0, 
+    [&ant] (Automate::CellLookup const&) {
+        ant.dir = (ant.dir + 1) % 4;
+        switch(ant.dir) {
+            case 0: ant.y--; break;
+            case 1: ant.x++; break;
+            case 2: ant.y++; break;
+            case 3: ant.x--; break;
+            default: break;
+        }
+        return 1;
+    });
+
+    app.define_rule(1, 
+    [&ant] (Automate::CellLookup const&) {
+        ant.dir = (ant.dir + 3) % 4;
+        switch(ant.dir) {
+            case 0: ant.y--; break;
+            case 1: ant.x++; break;
+            case 2: ant.y++; break;
+            case 3: ant.x--; break;
+            default: break;
+        }
+        return 0;
+    });
+
+    return app;
 }
 
 }

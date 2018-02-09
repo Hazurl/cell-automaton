@@ -45,6 +45,13 @@ public:
 
     Automate(unsigned cells_width_count, unsigned cells_height_count, unsigned starting_state);
 
+    struct LangtonAnt {
+        int x, y;
+        int dir; // 0 North; 1 East; 2 South; 3 West
+    };
+    static Automate langton_ant(unsigned width, unsigned height, LangtonAnt& ant);
+    static Automate game_of_life(unsigned width, unsigned height);
+
     void update_all();
     void update_selected(std::vector<sf::Vector2i> const& selected);
 

@@ -12,6 +12,7 @@ public:
     Grid();
 
     void update(Automate const& automate);
+    void update(Automate const& automate, int start_x, int start_y, unsigned rect_width, unsigned rect_height);
 
     void set_position(sf::Vector2f const& position);
     void set_scale(sf::Vector2f const& scale);
