@@ -9,7 +9,7 @@ namespace cellz {
 class Grid : public sf::Drawable {
 public:
 
-    Grid();
+    Grid() = default;
 
     void update(Automate const& automate);
     void update(Automate const& automate, int start_x, int start_y, unsigned rect_width, unsigned rect_height);
@@ -24,7 +24,7 @@ public:
 
     void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
-    void define_color(unsigned state, sf::Color color);
+    void define_color(unsigned state, sf::Color const& color);
 
 private:
 

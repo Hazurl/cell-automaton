@@ -144,8 +144,8 @@ unsigned Automate::get(int x, int y) const {
 }
 
 Automate Automate::game_of_life(unsigned width, unsigned height) {
-    constexpr unsigned state_alive = 1;
-    constexpr unsigned state_dead = 0;
+    static constexpr unsigned state_alive = 1;
+    static constexpr unsigned state_dead = 0;
 
     Automate app(width, height, state_dead);
 

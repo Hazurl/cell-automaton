@@ -2,10 +2,6 @@
 
 namespace cellz {
 
-Grid::Grid() {
-
-}
-
 void Grid::update(Automate const& amt) {
     unsigned width = amt.get_width();
     unsigned height = amt.get_height();
@@ -97,7 +93,7 @@ void Grid::draw(sf::RenderTarget& target, sf::RenderStates states) const {
     target.draw(object, states);
 }
 
-void Grid::define_color(unsigned state, sf::Color color) {
+void Grid::define_color(unsigned state, sf::Color const& color) {
     colors[state] = color;
 }
 
