@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include <cellz/Automate/Automate.hpp>
-#include <cellz/Automate/Grid.hpp>
+#include <cellz/Automate.hpp>
+#include <cellz/Grid.hpp>
 
 #include <SFML/Graphics.hpp>
 
@@ -34,7 +34,7 @@ int main() {
     grid.update(app);
     grid.set_scale({scale, scale});
 
-    sf::RenderWindow window(sf::VideoMode(width * scale, height * scale), "SFML - GOL");
+    sf::RenderWindow window(sf::VideoMode(width * scale, height * scale), "SFML - Cellular Automata");
 
     while (window.isOpen())
     {

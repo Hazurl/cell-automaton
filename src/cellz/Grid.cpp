@@ -1,4 +1,4 @@
-#include <cellz/Automate/Grid.hpp>
+#include <cellz/Grid.hpp>
 
 namespace cellz {
 

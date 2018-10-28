@@ -1,4 +1,4 @@
-#include <cellz/Automate/Automate.hpp>
+#include <cellz/Automate.hpp>
 
 namespace cellz {
 

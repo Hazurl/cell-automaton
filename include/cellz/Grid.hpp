@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cellz/Automate/Automate.hpp>
+#include <cellz/Automate.hpp>
 
 #include <SFML/Graphics.hpp>
 
