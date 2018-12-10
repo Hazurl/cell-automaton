@@ -11,8 +11,8 @@ int main() {
     static unsigned constexpr window_height = 800;
     static unsigned constexpr window_width = 800;
     static std::size_t constexpr chunk_count = 3;
-    static std::size_t constexpr chunk_size = 5;
-    static unsigned constexpr chunk_padding = 10;
+    static std::size_t constexpr chunk_size = 100;
+    static unsigned constexpr chunk_padding = 1;
 
 
 
@@ -28,7 +28,7 @@ int main() {
     option.finite_horizontal_count(chunk_count - 1);
     option.finite_vertical_count(chunk_count - 1);
     World world{ 0, chunk_size, option };
-
+/*
     world.set({-1, 0}, 1);
     world.set({0, 0}, 1);
     world.set({1, 0}, 1);
@@ -36,6 +36,18 @@ int main() {
     world.set({2, 3}, 1);
     world.set({3, 3}, 1);
     world.set({4, 3}, 1);
+*/
+
+    for(auto const& v : std::initializer_list<Position>{
+        {1, 0},
+        {2, 1},
+        {2, 2},
+        {1, 2},
+        {0, 2},
+    }) {
+        world.set(v, 1);
+        world.set({v.x + 10, v.y}, 1);
+    }
 
 /*
     world.set({0, 0}, 1);
@@ -71,12 +83,12 @@ int main() {
 
 
 
-
+    bool start = true;
 
 
     std::vector<sf::Texture> textures(9);
     std::vector<sf::Sprite> sprites;
-    std::vector<Position> const chunks_position {
+    std::vector<Position> chunks_position {
         {-1, -1},
         { 0, -1},
         { 1, -1},
@@ -102,22 +114,65 @@ int main() {
 
         sprite.setOrigin(chunk_size / 2, chunk_size / 2);
         
-        auto const scale = (((window_width - chunk_padding) / chunk_count) - chunk_padding) / chunk_size;
+        auto const scale = ((static_cast<float>(window_width - chunk_padding) / static_cast<float>(chunk_count)) - static_cast<float>(chunk_padding)) / static_cast<float>(chunk_size);
         sprite.setScale(scale, scale);
 
         auto const factor = static_cast<float>(scale * chunk_size + chunk_padding);
         sprite.setPosition(chunk_position.x * factor, chunk_position.y * factor);
     }
     
-    while (window.isOpen())
-    {
+    while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
 
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Key::Space) {
-                world.update(rules);
+                if (!start && !event.key.shift) {
+                    world.update(rules);
+    
+                    auto chunk_position_iter = std::cbegin(chunks_position);
+                    for(auto& texture : textures) {
+                        auto const chunk_position = *(chunk_position_iter++);
+                        world.to_texture(chunk_position, texture, colors);
+                    }
+                }
+
+                start = event.key.shift ? !start : false;
+            } else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Key::Left) {
+                for(auto& p : chunks_position) {
+                    p.x--;
+                }
+
+                auto chunk_position_iter = std::cbegin(chunks_position);
+                for(auto& texture : textures) {
+                    auto const chunk_position = *(chunk_position_iter++);
+                    world.to_texture(chunk_position, texture, colors);
+                }
+            } else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Key::Right) {
+                for(auto& p : chunks_position) {
+                    p.x++;
+                }
+
+                auto chunk_position_iter = std::cbegin(chunks_position);
+                for(auto& texture : textures) {
+                    auto const chunk_position = *(chunk_position_iter++);
+                    world.to_texture(chunk_position, texture, colors);
+                }
+            } else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Key::Down) {
+                for(auto& p : chunks_position) {
+                    p.y++;
+                }
+
+                auto chunk_position_iter = std::cbegin(chunks_position);
+                for(auto& texture : textures) {
+                    auto const chunk_position = *(chunk_position_iter++);
+                    world.to_texture(chunk_position, texture, colors);
+                }
+            } else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Key::Up) {
+                for(auto& p : chunks_position) {
+                    p.y--;
+                }
 
                 auto chunk_position_iter = std::cbegin(chunks_position);
                 for(auto& texture : textures) {
@@ -126,6 +181,17 @@ int main() {
                 }
             }
         }
+
+        if (start) {
+            world.update(rules);
+
+            auto chunk_position_iter = std::cbegin(chunks_position);
+            for(auto& texture : textures) {
+                auto const chunk_position = *(chunk_position_iter++);
+                world.to_texture(chunk_position, texture, colors);
+            }
+        }
+
 
         window.clear();
         for(auto const& sprite : sprites) {

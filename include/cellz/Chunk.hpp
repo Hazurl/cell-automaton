@@ -28,15 +28,15 @@ public:
 
     Neighbors get_neighbors(Position const& position) const;
 
-    void sync_hidden_north_border(Chunk const& from);
-    void sync_hidden_south_border(Chunk const& from);
-    void sync_hidden_east_border(Chunk const& from);
-    void sync_hidden_west_border(Chunk const& from);
+    void sync_hidden_north_border(Chunk const* from);
+    void sync_hidden_south_border(Chunk const* from);
+    void sync_hidden_east_border(Chunk const* from);
+    void sync_hidden_west_border(Chunk const* from);
 
-    void sync_hidden_north_west_corner(Chunk const& from);
-    void sync_hidden_south_west_corner(Chunk const& from);
-    void sync_hidden_south_east_corner(Chunk const& from);
-    void sync_hidden_north_east_corner(Chunk const& from);
+    void sync_hidden_north_west_corner(Chunk const* from);
+    void sync_hidden_south_west_corner(Chunk const* from);
+    void sync_hidden_south_east_corner(Chunk const* from);
+    void sync_hidden_north_east_corner(Chunk const* from);
 
     void to_texture(sf::Texture& texture, std::unordered_map<state_t, sf::Color> const& colors) const;
 
@@ -59,8 +59,14 @@ private:
 
 template<typename It>
 void Chunk::set_row(int const row, It iterator) {
-    std::size_t index = (width + 2) * (row + 1) + 1;
+    std::size_t index = from_coords({0, row}); 
+    //std::cout << "R[" << row << "] " << updated << " => ";
+    updated -= width - std::count(std::begin(states) + index, std::begin(states) + index + width, default_state);
+
     std::copy_n(iterator, width, std::begin(states) + index);
+
+    updated += width - std::count(std::begin(states) + index, std::begin(states) + index + width, default_state);
+    //std::cout << updated << "\n";
 }
 
 

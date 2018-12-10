@@ -44,7 +44,7 @@ state_t Chunk::get_default_state() const {
 
 
 std::size_t Chunk::from_coords(Position const& position) const {
-    return (position.y + 1) * (width + 2) + position.x + 1;
+    return (position.y + 1) * real_width() + position.x + 1;
 }
 
 
@@ -91,64 +91,176 @@ Neighbors Chunk::get_neighbors(Position const& position) const {
 
 
 
-void Chunk::sync_hidden_north_border(Chunk const& from_chunk) {
+void Chunk::sync_hidden_north_border(Chunk const* from_chunk) {
     std::size_t const to = 1;
     std::size_t const from = real_width() * (real_height() - 2) + 1;
-    std::copy_n(std::begin(from_chunk.states) + from, width, std::begin(states) + to);
+    //std::cout << "N " << updated << " => ";
+    updated -= width - std::count(std::begin(states) + to, std::begin(states) + to + width, default_state);
+    if (from_chunk) {
+        std::copy_n(std::begin(from_chunk->states) + from, width, std::begin(states) + to);
+        updated += width - std::count(std::begin(states) + to, std::begin(states) + to + width, default_state);
+    } else {
+        std::fill_n(std::begin(states) + to, width, default_state);
+    }
+    //std::cout << updated << "\n";
 }
 
-void Chunk::sync_hidden_south_border(Chunk const& from_chunk) {
+void Chunk::sync_hidden_south_border(Chunk const* from_chunk) {
     std::size_t const to = real_width() * (real_height() - 1) + 1;
     std::size_t const from = real_width() + 1;
-    std::copy_n(std::begin(from_chunk.states) + from, width, std::begin(states) + to);
+    //std::cout << "S " << updated << " => ";
+    updated -= width - std::count(std::begin(states) + to, std::begin(states) + to + width, default_state);
+    if (from_chunk) {
+        std::copy_n(std::begin(from_chunk->states) + from, width, std::begin(states) + to);
+        updated += width - std::count(std::begin(states) + to, std::begin(states) + to + width, default_state);
+    } else {
+        std::fill_n(std::begin(states) + to, width, default_state);
+    }
+    //std::cout << updated << "\n";
 }
 
-void Chunk::sync_hidden_east_border(Chunk const& from_chunk) {
+void Chunk::sync_hidden_east_border(Chunk const* from_chunk) {
     std::size_t to = real_width() * 2 - 1;
-    std::size_t from = real_width() + 1;
     std::size_t const step = real_width();
 
-    for(; to < (real_height() - 1) * step; (to += step), (from += step))
-        states[to] = from_chunk.states[from];
+    //std::cout << "E " << updated << " => ";
+    if (from_chunk) {
+        std::size_t from = real_width() + 1;
+        for(; to < (real_height() - 1) * step; (to += step), (from += step)) {
+            if (states[to] != default_state && from_chunk->states[from] == default_state) {
+                --updated;
+            } else if (states[to] == default_state && from_chunk->states[from] != default_state) {
+                ++updated;
+            }
+            states[to] = from_chunk->states[from];
+        }
+    } else {
+        for(; to < (real_height() - 1) * step; to += step) {
+            if (states[to] != default_state) {
+                --updated;
+            }
+            states[to] = default_state;
+        }
+    }
+    //std::cout << updated << "\n";
 }
 
-void Chunk::sync_hidden_west_border(Chunk const& from_chunk) {
+void Chunk::sync_hidden_west_border(Chunk const* from_chunk) {
     std::size_t to = real_width();
-    std::size_t from = real_width() * 2 - 2;
     std::size_t const step = real_width();
+    //std::cout << "W " << updated << " => ";
 
-    for(; to < (real_height() - 1) * step; (to += step), (from += step))
-        states[to] = from_chunk.states[from];
+    if (from_chunk) {
+        std::size_t from = real_width() * 2 - 2;
+        for(; to < (real_height() - 1) * step; (to += step), (from += step)) {
+            if (states[to] != default_state && from_chunk->states[from] == default_state) {
+                --updated;
+            } else if (states[to] == default_state && from_chunk->states[from] != default_state) {
+                ++updated;
+            }
+            states[to] = from_chunk->states[from];
+        }
+    } else {
+        for(; to < (real_height() - 1) * step; to += step) {
+            if (states[to] != default_state) {
+                --updated;
+            }
+            states[to] = default_state;
+        }
+    }
+    //std::cout << updated << "\n";
 }
 
 
 
-void Chunk::sync_hidden_south_west_corner(Chunk const& from_chunk) {
+void Chunk::sync_hidden_south_west_corner(Chunk const* from_chunk) {
     std::size_t const to = real_width() * (real_height() - 1);
-    std::size_t const from =  2 * real_width() - 2;
+    //std::cout << "SW " << updated << " => ";
+    if (from_chunk) {
+        std::size_t const from =  2 * real_width() - 2;
 
-    states[to] = from_chunk.states[from];
+        if (states[to] != default_state && from_chunk->states[from] == default_state) {
+            --updated;
+        } else if (states[to] == default_state && from_chunk->states[from] != default_state) {
+            ++updated;
+        }
+
+        states[to] = from_chunk->states[from];
+    } else {
+        if (states[to] != default_state) {
+            --updated;
+        }
+        states[to] = default_state;
+    }
+    //std::cout << updated << "\n";
 }
 
-void Chunk::sync_hidden_north_west_corner(Chunk const& from_chunk) {
+void Chunk::sync_hidden_north_west_corner(Chunk const* from_chunk) {
     std::size_t const to = 0;
-    std::size_t const from = real_width() * (real_height() - 1) - 2;
+    //std::cout << "NW " << updated << " => ";
 
-    states[to] = from_chunk.states[from];
+    if (from_chunk) {
+        std::size_t const from = real_width() * (real_height() - 1) - 2;
+
+        if (states[to] != default_state && from_chunk->states[from] == default_state) {
+            --updated;
+        } else if (states[to] == default_state && from_chunk->states[from] != default_state) {
+            ++updated;
+        }
+
+        states[to] = from_chunk->states[from];
+    } else {
+        if (states[to] != default_state) {
+            --updated;
+        }
+        states[to] = default_state;
+    }
+    //std::cout << updated << "\n";
 }
 
-void Chunk::sync_hidden_north_east_corner(Chunk const& from_chunk) {
+void Chunk::sync_hidden_north_east_corner(Chunk const* from_chunk) {
     std::size_t const to = real_width() - 1;
-    std::size_t const from = real_width() * (real_height() - 2) + 1;
 
-    states[to] = from_chunk.states[from];
+    //std::cout << "NE " << updated << " => ";
+    if (from_chunk) {
+        std::size_t const from = real_width() * (real_height() - 2) + 1;
+        
+        if (states[to] != default_state && from_chunk->states[from] == default_state) {
+            --updated;
+        } else if (states[to] == default_state && from_chunk->states[from] != default_state) {
+            ++updated;
+        }
+
+        states[to] = from_chunk->states[from];
+    } else {
+        if (states[to] != default_state) {
+            --updated;
+        }
+        states[to] = default_state;
+    }
+    //std::cout << updated << "\n";
 }
 
-void Chunk::sync_hidden_south_east_corner(Chunk const& from_chunk) {
+void Chunk::sync_hidden_south_east_corner(Chunk const* from_chunk) {
     std::size_t const to = real_width() * real_height() - 1;
-    std::size_t const from = real_width() + 1;
+    //std::cout << "SE " << updated << " => ";
+    if (from_chunk) {
+        std::size_t const from = real_width() + 1;
 
-    states[to] = from_chunk.states[from];
+        if (states[to] != default_state && from_chunk->states[from] == default_state) {
+            --updated;
+        } else if (states[to] == default_state && from_chunk->states[from] != default_state) {
+            ++updated;
+        }
+
+        states[to] = from_chunk->states[from];
+    } else {
+        if (states[to] != default_state) {
+            --updated;
+        }
+        states[to] = default_state;
+    }
+    //std::cout << updated << "\n";
 }
 
 

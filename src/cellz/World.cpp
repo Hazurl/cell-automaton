@@ -132,7 +132,7 @@ void World::to_texture(Position const& position, sf::Texture& texture, std::unor
         //std::cout << "No chunk => fill texture with default color\n";
         std::vector<sf::Uint8> pixels( 4 * chunk_size * chunk_size );
         auto const color_iter = colors.find(default_state);
-        sf::Color color = color_iter == std::end(colors) ? sf::Color{} : color_iter->second;
+        sf::Color color = sf::Color{120, 80, 120}; // color_iter == std::end(colors) ? sf::Color{} : color_iter->second;
         for(std::size_t i{0}; i < pixels.size(); i += 4) {
             pixels[i + 0] = color.r;
             pixels[i + 1] = color.g;
@@ -211,7 +211,7 @@ WorldPosition World::get_wrapped_chunk_coords(Position position) const {
 
 
 using update_chunk_iterator_t = std::unordered_map<Position, Chunk>::iterator;
-using chunk_list_iterator_t = std::vector<Chunk*>::iterator;
+using sync_chunk_iterator_t = std::unordered_map<Position, Chunk*>::iterator;
 
 
 std::pair<Position, Chunk*> get_next_chunk_and_position(update_chunk_iterator_t& begin, update_chunk_iterator_t const end, std::mutex& begin_mutex) {
@@ -225,6 +225,14 @@ std::pair<Position, Chunk*> get_next_chunk_and_position(update_chunk_iterator_t&
 
 Chunk* get_next_chunk(update_chunk_iterator_t& begin, update_chunk_iterator_t const end, std::mutex& begin_mutex) {
     return get_next_chunk_and_position(begin, end, begin_mutex).second;
+}
+
+std::pair<Position, Chunk*> get_next_chunk_and_position(sync_chunk_iterator_t& begin, sync_chunk_iterator_t const end, std::mutex& begin_mutex) {
+    std::lock_guard<std::mutex> lock{ begin_mutex };
+    if (begin == end)
+        return { {0, 0}, nullptr };
+
+    return *begin++;
 }
 
 void update_chunk(Rules const& rules, update_chunk_iterator_t& begin, update_chunk_iterator_t const end, std::mutex& begin_mutex) {
@@ -250,26 +258,19 @@ void update_chunk(Rules const& rules, update_chunk_iterator_t& begin, update_chu
     } 
 }
 
-void sync_chunk_with(std::unordered_map<Position, Chunk>& chunks, Chunk& current, std::mutex& chunks_mutex, Position const& target, void(Chunk::*func)(Chunk const&)) {
+void sync_chunk_with(std::unordered_map<Position, Chunk>& chunks, Chunk& current, std::mutex& chunks_mutex, Position const& target, void(Chunk::*func)(Chunk const*)) {
     auto const it = const_cast<std::unordered_map<Position, Chunk> const&>(chunks).find(target);
     if (it != std::end(const_cast<std::unordered_map<Position, Chunk> const&>(chunks))) {
-        (current.*func)(it->second);
-    } else {/*
-        std::lock_guard<std::mutex> lock{ chunks_mutex };
-        (current.*func)(
-            chunks.emplace(
-                target, 
-                Chunk { current.get_default_state(), current.get_width(), current.get_height() }
-            ).first->second);*/
+        (current.*func)(&it->second);
     }
 }
 
-void sync_chunk(std::unordered_map<Position, Chunk>& chunks, update_chunk_iterator_t& begin, update_chunk_iterator_t const end, std::mutex& begin_mutex, std::mutex& chunks_mutex) {
+void sync_chunk(std::unordered_map<Position, Chunk>& chunks, sync_chunk_iterator_t& begin, sync_chunk_iterator_t const end, std::mutex& begin_mutex, std::mutex& chunks_mutex) {
     for(auto chunk = get_next_chunk_and_position(begin, end, begin_mutex); chunk.second != nullptr; chunk = get_next_chunk_and_position(begin, end, begin_mutex)) {
         auto const position = chunk.first;
         auto& chunk_ref = *chunk.second;
 
-        std::cout << "Current Chunk: " << position << ", <" << chunk_ref.get({0, 0}) << ", " << chunk_ref.get({1, 0}) << "> <" << chunk_ref.get({0, 1}) << ", " << chunk_ref.get({1, 1}) << ">\n";
+        //std::cout << "Current Chunk: " << position << ", <" << chunk_ref.get({0, 0}) << ", " << chunk_ref.get({1, 0}) << "> <" << chunk_ref.get({0, 1}) << ", " << chunk_ref.get({1, 1}) << ">\n";
 
         //std::cerr << "Sync north border of " << Position{ position.x, position.y - 1 } << " with " << position << '\n';
         sync_chunk_with(chunks, chunk_ref, chunks_mutex, { position.x, position.y - 1 }, &Chunk::sync_hidden_north_border);
@@ -314,7 +315,12 @@ void World::update(Rules const& rules, unsigned const additional_thread) {
     update_chunk_iterator_t const end = std::end(chunks);
     std::mutex begin_mutex;
     std::mutex chunks_mutex;
-
+/*
+    for(auto const& p : chunks) {
+        std::cout << p.first << " : " << p.second.updated_cell_count() << ", ";
+    }
+    std::cout << '\n';*/
+/*
     std::cout << "### START ###\n";
     for(int cy = -1; cy <= 1; ++cy) {
         for(int y = -1; y <= (int)chunk_size; ++y) {
@@ -342,7 +348,7 @@ void World::update(Rules const& rules, unsigned const additional_thread) {
         }
         std::cerr << '\n';
     }
-
+*/
     std::vector<std::thread> threads;
     threads.reserve(additional_thread);
     /*for(unsigned t{0}; t < additional_thread; ++t)
@@ -354,7 +360,7 @@ void World::update(Rules const& rules, unsigned const additional_thread) {
         thread.join();
 
     threads.clear();
-
+/*
     std::cout << "### UPDATED ###\n";
     for(int cy = -1; cy <= 1; ++cy) {
         for(int y = -1; y <= static_cast<int>(chunk_size); ++y) {
@@ -382,11 +388,30 @@ void World::update(Rules const& rules, unsigned const additional_thread) {
         }
         std::cerr << '\n';
     }
+*/
+    std::unordered_map<Position, Chunk*> chunks_list(chunks.size());
+    std::vector<Position> position_to_add;
+    for(auto& chunk : chunks) {
+        //std::cout << "WITH " << chunk.first << '\n';
+        chunks_list.emplace(chunk.first, &chunk.second);
+        position_to_add.push_back({ chunk.first.x + 1, chunk.first.y - 1 });
+        position_to_add.push_back({ chunk.first.x + 1, chunk.first.y     });
+        position_to_add.push_back({ chunk.first.x + 1, chunk.first.y + 1 });
 
-    std::vector<Chunk*> chunks_list(chunks.size());
-    for(auto& chunk : chunks)
-        chunks_list.emplace_back(&chunk.second);
+        position_to_add.push_back({ chunk.first.x    , chunk.first.y - 1 });
+        position_to_add.push_back({ chunk.first.x    , chunk.first.y + 1 });
+
+        position_to_add.push_back({ chunk.first.x - 1, chunk.first.y - 1 });
+        position_to_add.push_back({ chunk.first.x - 1, chunk.first.y     });
+        position_to_add.push_back({ chunk.first.x - 1, chunk.first.y + 1 });
+    }
     
+    for(auto p : position_to_add) {
+        auto it = chunks.emplace(p, Chunk {default_state, chunk_size, chunk_size}).first;
+        chunks_list.emplace(it->first, &it->second);
+        //std::cout << "+ " << p << '\n';
+    }
+
     auto begin_list = std::begin(chunks_list);
     auto const end_list = std::end(chunks_list);
 
@@ -395,11 +420,11 @@ void World::update(Rules const& rules, unsigned const additional_thread) {
     /*for(unsigned t{0}; t < additional_thread; ++t)
         threads.emplace_back(sync_chunk, std::ref(chunks), std::ref(begin), end, std::ref(begin_mutex), std::ref(chunks_mutex));*/
 
-    sync_chunk(chunks, begin, end, begin_mutex, chunks_mutex);
+    sync_chunk(chunks, begin_list, end_list, begin_mutex, chunks_mutex);
 
     for(auto& thread : threads)
         thread.join();
-
+/*
     std::cout << "### SYNCHRONIZED ###\n";
     for(int cy = -1; cy <= 1; ++cy) {
         for(int y = -1; y <= (int)chunk_size; ++y) {
@@ -428,6 +453,28 @@ void World::update(Rules const& rules, unsigned const additional_thread) {
         std::cerr << '\n';
     }
     std::cout << "### END ###\n";
+*/
+    for(auto it = std::begin(chunks); it != std::end(chunks);) {
+        if (it->second.updated_cell_count() == 0) {
+            //std::cout << "Put asleep " << it->first << '\n';
+            it = chunks.erase(it);
+        } else {
+            ++it;
+        }
+    }
+/*
+    for(auto const& p : chunks) {
+        std::cout << p.first << " : " << p.second.updated_cell_count() << ", ";
+    }
+    std::cout << '\n';
+*/
+/*
+    for(auto const& c : chunks_list) {
+        if (c.second->updated_cell_count() > 0) {
+            std::cout << "Awaken " << c.first << '\n';
+            chunks.emplace(c.first, *c.second);
+        }
+    }*/
 }
 
 }
