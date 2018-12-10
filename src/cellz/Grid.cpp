@@ -1,4 +1,5 @@
 #include <cellz/Grid.hpp>
+#include <iostream>
 
 namespace cellz {
 

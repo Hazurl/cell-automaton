@@ -73,15 +73,20 @@ header-of = $(1:%$(EXT_SRC_FILE)=%$(EXT_INC_FILE))
 # Relative to $(SRC_FOLDER)
 SRC_EXCLUDE_FILE := 
 # All files that are not use for libraries, don't add src/
-SRC_MAINS := main.cpp
+SRC_MAINS := main.cpp new_main.cpp
 # The main file to use (must be in $(SRC_MAINS))
-SRC_MAIN := main.cpp
+SRC_MAIN := new_main.cpp
 
 #####
 ##### FLAGS
 #####
 
-FLAGS := -std=c++17 -g3 -Wall -Wextra -Wno-pmf-conversions -O2 -pthread
+OPTI := -O3
+FLAGS := -std=c++17  $(OPTI) -pthread
+FLAGS += -Wall -Wextra -Wno-pmf-conversions -Wshadow -Wpedantic -Wduplicated-cond -Wduplicated-branches -Wlogical-op 
+FLAGS += -Wnull-dereference -Wuseless-cast -Wold-style-cast -Wcast-align -Wcast-qual -Wno-missing-field-initializers 
+TEST_FLAGS := -fsanitize=address -fsanitize=pointer-subtract -fsanitize=pointer-compare -fsanitize=leak -fsanitize=undefined -fuse-ld=gold
+TEST_FLAGS += -fsanitize-address-use-after-scope
 STATIC_LINK_FLAG := rcs
 
 # Include path
@@ -299,6 +304,16 @@ valgrind:
 re-valgrind:
 	@make re-executable
 	@make valgrind
+
+checks:
+	@cppcheck -j 4 --inconclusive --enable=all -I include src 2>&1 /dev/null | \
+	 sed   "s/^.*style.*)/\o033[36m&\o033[0m/g;\
+		 	s/^.*note.*)/\o033[36m&\o033[0m/g;\
+		 	s/^.*performance.*)/\o033[35m&\o033[0m/g;\
+		 	s/^.*error.*)/\o033[31m&\o033[0m/g;\
+		 	s/^.*warning.*)/\o033[33m&\o033[0m/g;\
+		 	s/^[0-9].*/\o033[1m&\o033[0m/g"
+
 
 $(_BUILD_DIR):
 	@mkdir -p $(_BUILD_DIR)

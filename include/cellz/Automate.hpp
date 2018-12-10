@@ -12,6 +12,8 @@ namespace cellz {
 class Automate {
 public:
 
+    using state_t = unsigned;
+
     class CellLookup {
     public:
         struct Around {
@@ -43,25 +45,24 @@ public:
     };
 
 
-    Automate(unsigned cells_width_count, unsigned cells_height_count, unsigned starting_state);
+    Automate(unsigned cells_width_count, unsigned cells_height_count, state_t starting_state);
 
     struct LangtonAnt {
         int x, y;
         int dir; // 0 North; 1 East; 2 South; 3 West
     };
     static Automate langton_ant(unsigned width, unsigned height, LangtonAnt& ant);
-    static Automate game_of_life(unsigned width, unsigned height);
 
     void update_all();
     void update_selected(std::vector<sf::Vector2i> const& selected);
 
-    void define_rule(unsigned state, std::function<unsigned(CellLookup const&)> rule);
-    void define_wrap_mode(WrapMode mode, unsigned default_state = 0);
+    void define_rule(state_t state, std::function<state_t(CellLookup const&)> rule);
+    void define_wrap_mode(WrapMode mode, state_t default_state = 0);
 
     unsigned get(int x, int y) const;
-    void set(int x, int y, unsigned state);
-    void set_all(unsigned state);
-    void set_all(std::function<unsigned(int, int)> const& generator);
+    void set(int x, int y, state_t state);
+    void set_all(state_t state);
+    void set_all(std::function<state_t(int, int)> const& generator);
 
     unsigned get_width() const;
     unsigned get_height() const;
@@ -69,15 +70,15 @@ public:
 private:
 
     std::optional<sf::Vector2i> to_coords(unsigned id) const;
-    std::optional<unsigned> from_coords(int x, int y) const;
+    std::optional<state_t> from_coords(int x, int y) const;
 
-    unsigned default_state;
+    state_t default_state;
     WrapMode mode;
 
     unsigned width, height;
-    std::vector<unsigned> cells;
+    std::vector<state_t> cells;
 
-    std::map<unsigned, std::function<unsigned(CellLookup const&)>> rules;
+    std::map<state_t, std::function<state_t(CellLookup const&)>> rules;
 
 };
 

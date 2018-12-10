@@ -143,29 +143,6 @@ unsigned Automate::get(int x, int y) const {
     return id ? cells[*id] : default_state;
 }
 
-Automate Automate::game_of_life(unsigned width, unsigned height) {
-    static constexpr unsigned state_alive = 1;
-    static constexpr unsigned state_dead = 0;
-
-    Automate app(width, height, state_dead);
-
-    app.define_rule(state_dead, 
-    [] (Automate::CellLookup const& lookup) {
-        unsigned counter = 0;
-        lookup.arounds().for_each([&counter] (unsigned c) { counter += c; });
-        return counter == 3 ? state_alive : state_dead;
-    });
-
-    app.define_rule(state_alive, 
-    [] (Automate::CellLookup const& lookup) {
-        unsigned counter = 0;
-        lookup.arounds().for_each([&counter] (unsigned c) { counter += c; });
-        return counter == 3 || counter == 2 ? state_alive : state_dead;
-    });
-
-    return app;
-}
-
 Automate Automate::langton_ant(unsigned width, unsigned height, Automate::LangtonAnt& ant) {
     Automate app(width, height, 0);
 
