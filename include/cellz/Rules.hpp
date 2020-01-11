@@ -23,7 +23,7 @@ namespace cellz {
 class Rules {
 public:
 
-    Rules(std::size_t const state_count);
+    explicit Rules(std::size_t const state_count);
     Rules& on(state_t const state, rule_t const rule);
     rule_t get(state_t const state) const;
 

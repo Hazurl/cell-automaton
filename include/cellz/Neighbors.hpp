@@ -10,7 +10,7 @@ namespace cellz {
 class Neighbors {
 public:
 
-    Neighbors(std::array<std::array<state_t, 3>, 3> const& neighbors);
+    explicit Neighbors(std::array<std::array<state_t, 3>, 3> const& _neighbors);
 
     state_t north_west() const;
     state_t north() const;
@@ -24,7 +24,7 @@ public:
     state_t south() const;
     state_t south_east() const;
 
-    unsigned count(state_t const state) const;
+    unsigned count(state_t const state_checked) const;
     bool all(state_t const state) const;
     bool any(state_t const state) const;
     bool none(state_t const state) const;

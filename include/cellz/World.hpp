@@ -14,14 +14,14 @@ class World {
 public:
 
 
-    World(state_t const default_state, std::size_t const chunk_size, Option option = {});
+    World(state_t const _default_state, std::size_t const _chunk_size, Option const& _option = {});
 
     void update(Rules const& rules, unsigned const additional_thread = 0);
 
     state_t get(Position const& position) const;
     void set(Position const& position, state_t const state);
 
-    void to_texture(Position const& chunk, sf::Texture& texture, std::unordered_map<state_t, sf::Color> const& colors) const;
+    void to_texture(Position const& chunk_position, sf::Texture& texture, std::unordered_map<state_t, sf::Color> const& colors) const;
 
 private:
 

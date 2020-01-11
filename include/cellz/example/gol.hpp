@@ -1,5 +1,5 @@
 #pragma once
-
+/*
 #include <cellz/Automate.hpp>
 #include <cellz/Grid.hpp>
 #include <SFML/Graphics.hpp>
@@ -65,4 +65,4 @@ public:
 
 };
 
-}
+}*/

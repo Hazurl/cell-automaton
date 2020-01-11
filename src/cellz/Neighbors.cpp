@@ -1,8 +1,10 @@
 #include <cellz/Neighbors.hpp>
 
+#include <algorithm>
+
 namespace cellz {
 
-Neighbors::Neighbors(std::array<std::array<state_t, 3>, 3> const& neighbors) : neighbors(neighbors) {}
+Neighbors::Neighbors(std::array<std::array<state_t, 3>, 3> const& _neighbors) : neighbors(_neighbors) {}
 
 state_t Neighbors::north_west() const { return neighbors[0][0]; }
 state_t Neighbors::north() const { return neighbors[0][1]; }
@@ -18,10 +20,9 @@ state_t Neighbors::south_east() const { return neighbors[2][2]; }
 
 unsigned Neighbors::count(state_t const state_checked) const {
     unsigned c{0};
-    for(auto const& row : neighbors) 
-        for(auto const state : row)
-            if (state == state_checked)
-                c++;
+    for(auto const& row : neighbors) {
+        c += std::count(std::begin(row), std::end(row), state_checked);
+    }
 
     return c - (there() == state_checked ? 1 : 0);
 }

@@ -1,4 +1,4 @@
-#include <cellz/example/ant.hpp>
+/*#include <cellz/example/ant.hpp>
 #include <iostream>
 
 namespace cellz::example {
@@ -99,4 +99,4 @@ std::pair<Automate, Grid> LangtonAnt::make() const noexcept {
     return { app, grid };
 }
 
-}
+}*/

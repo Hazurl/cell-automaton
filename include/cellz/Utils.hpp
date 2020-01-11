@@ -62,11 +62,11 @@ public:
 
     constexpr Option() : horizontal_count(std::nullopt), vertical_count{std::nullopt}, hori_wrap{false}, vert_wrap{false} {}
     
-    constexpr void horizontal_wrap(std::size_t const horizontal_count) { hori_wrap = true; this->horizontal_count = horizontal_count; }
-    constexpr void vertical_wrap(std::size_t const vertical_count) { vert_wrap = true; this->vertical_count = vertical_count; }
+    constexpr void horizontal_wrap(std::size_t const _horizontal_count) { hori_wrap = true; this->horizontal_count = _horizontal_count; }
+    constexpr void vertical_wrap(std::size_t const _vertical_count) { vert_wrap = true; this->vertical_count = _vertical_count; }
 
-    constexpr void finite_horizontal_count(std::size_t const horizontal_count) { this->horizontal_count = horizontal_count; }
-    constexpr void finite_vertical_count(std::size_t const vertical_count) { this->vertical_count = vertical_count; }
+    constexpr void finite_horizontal_count(std::size_t const _horizontal_count) { this->horizontal_count = _horizontal_count; }
+    constexpr void finite_vertical_count(std::size_t const _vertical_count) { this->vertical_count = _vertical_count; }
 
     constexpr std::optional<std::size_t> get_horizontal_count() const { return horizontal_count; }
     constexpr std::optional<std::size_t> get_vertical_count() const { return vertical_count; }

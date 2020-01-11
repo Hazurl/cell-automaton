@@ -1,71 +1,191 @@
-#include <iostream>
-
-#include <cellz/Automate.hpp>
-#include <cellz/Grid.hpp>
-#include <cellz/example/gol.hpp>
-#include <cellz/example/ant.hpp>
-
 #include <cellz/World.hpp>
 #include <cellz/Rules.hpp>
 
 #include <SFML/Graphics.hpp>
 
-#include <cstdlib>
-#include <ctime>
+#include <vector>
 
 int main() {
-    std::srand(std::time(nullptr));
     using namespace cellz;
+    
+    static unsigned constexpr window_height = 901;
+    static unsigned constexpr window_width = 901;
+    static int constexpr chunk_count = 9;
+    static std::size_t constexpr chunk_size = 100;
+    static unsigned constexpr chunk_padding = 1;
+    int chunk_x = 0;
+    int chunk_y = 0;
 
-    example::LangtonAnt ant;
-    auto&&[app, grid] = ant.make();
+
+
+    sf::RenderWindow window(sf::VideoMode(window_width, window_height), "SFML - Cellular Automata");
+    window.setPosition({500, 50});
+    //sf::View window_view = window.getView();
+    //window_view.setCenter(0, 0);
+    //window.setView(window_view);
+
+
+
+
+    Option option{};
+    option.finite_horizontal_count(chunk_count - 1);
+    option.finite_vertical_count(chunk_count - 1);
+    World world{ 0, chunk_size, option };
 /*
-    example::GameOfLife::Patterns::block(app, {10, 10}, gol.states.alive);
-    example::GameOfLife::Patterns::beehive(app, {20, 10}, gol.states.alive);
-    example::GameOfLife::Patterns::loaf(app, {30, 10}, gol.states.alive);
-    example::GameOfLife::Patterns::boat(app, {40, 10}, gol.states.alive);
-    example::GameOfLife::Patterns::tub(app, {50, 10}, gol.states.alive);
+    world.set({-1, 0}, 1);
+    world.set({0, 0}, 1);
+    world.set({1, 0}, 1);
 
-    example::GameOfLife::Patterns::blinker(app, {10, 20}, gol.states.alive);
-    example::GameOfLife::Patterns::toad(app, {20, 20}, gol.states.alive);
-    example::GameOfLife::Patterns::beacon(app, {30, 20}, gol.states.alive);
-    example::GameOfLife::Patterns::pulsar(app, {40, 20}, gol.states.alive);
-    example::GameOfLife::Patterns::pentadecathlon(app, {60, 20}, gol.states.alive);
-
-    example::GameOfLife::Patterns::glider(app, {10, 25}, gol.states.alive);
-    example::GameOfLife::Patterns::l_spaceship(app, {50, 50}, gol.states.alive);
+    world.set({2, 3}, 1);
+    world.set({3, 3}, 1);
+    world.set({4, 3}, 1);
 */
-    app.define_wrap_mode(Automate::WrapMode::Both);
 
-    sf::RenderWindow window(sf::VideoMode(ant.size.width * ant.size.scale, ant.size.heigth * ant.size.scale), "SFML - Cellular Automata");
+    for(auto const& v : std::initializer_list<Position>{
+        {1, 0},
+        {2, 1},
+        {2, 2},
+        {1, 2},
+        {0, 2},
+    }) {
+        world.set(v, 1);
+        world.set({v.x + 10, v.y}, 1);
+    }
 
-    sf::Clock clock;
-    float dt = 0;
+/*
+    world.set({0, 0}, 1);
+    world.set({1, 0}, 1);
+    world.set({0, 1}, 1);
+    world.set({1, 1}, 1);
+*/
+/*
+    world.set({0, 2}, 1);
+    world.set({1, 2}, 1);
+    world.set({0, -1}, 1);
+    world.set({1, -1}, 1);
+    world.set({-1, 0}, 1);
+    world.set({-1, 1}, 1);
+    world.set({2, 0}, 1);
+    world.set({2, 1}, 1);
+*/
 
-    while (window.isOpen())
+
+
+    Rules rules{2};
+    rules.on(0,  [] (Neighbors const& neighbors) -> state_t { 
+        return neighbors.count(1) == 3 ? 1 : 0; 
+    }).on(1, [] (Neighbors const& neighbors) -> state_t { 
+        auto const count = neighbors.count(1); 
+        return count == 2 || count == 3 ? 1 : 0; 
+    });
+
+    std::unordered_map<state_t, sf::Color> colors {
+        {0, sf::Color{80, 80, 80}},
+        {1, sf::Color{220, 220, 220}}
+    };
+
+
+
+    bool start = true;
+
+
+    std::vector<sf::Texture> textures(chunk_count * chunk_count);
+    std::vector<sf::Sprite> sprites;
+    std::vector<Position> chunks_position {
+        {-1, -1},
+        { 0, -1},
+        { 1, -1},
+        {-1,  0},
+        { 0,  0},
+        { 1,  0},
+        {-1,  1},
+        { 0,  1},
+        { 1,  1}
+    };
+
     {
+        auto texture_it = std::begin(textures);
+        for(int y = 0; y < chunk_count; ++y) {
+            for(int x = 0; x < chunk_count; ++x) {
+                auto chunk_position = Position{ x + chunk_x - chunk_count / 2, y + chunk_y - chunk_count / 2};
+                auto& texture = *(texture_it++);
+
+                if (!texture.create(chunk_size, chunk_size)) {
+                    std::cerr << "Couldn't create the texture\n";
+                    return 1;
+                }
+
+                world.to_texture(chunk_position, texture, colors);
+
+                auto& sprite = sprites.emplace_back(texture);
+                
+                auto const scale = ((static_cast<float>(window_width - chunk_padding) / static_cast<float>(chunk_count)) - static_cast<float>(chunk_padding)) / static_cast<float>(chunk_size);
+                sprite.setScale(scale, scale);
+
+                float const factor = static_cast<float>(window_width - chunk_padding) / static_cast<float>(chunk_count);
+                sprite.setPosition(chunk_padding + x * factor, chunk_padding + y * factor);
+            }
+        }
+    }
+
+    auto update_textures = [&textures, &chunk_x, &chunk_y, &colors, &world] () {
+        auto texture_it = std::begin(textures);
+        for(int y = 0; y < chunk_count; ++y) {
+            for(int x = 0; x < chunk_count; ++x) {
+                auto chunk_position = Position{ x + chunk_x - chunk_count / 2, y + chunk_y - chunk_count / 2};
+                auto& texture = *(texture_it++);
+
+                world.to_texture(chunk_position, texture, colors);
+            }
+        }
+    };
+    
+    while (window.isOpen()) {
         sf::Event event;
-        while (window.pollEvent(event))
-        {
+        while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
-        }
-        /*app.update_selected({{ant.x, ant.y}});
-        app.update_selected({{ant.x, ant.y}});
-        app.update_selected({{ant.x, ant.y}});
-        app.update_selected({{ant.x, ant.y}});
-        app.update_selected({{ant.x, ant.y}});
-        grid.update(app, ant.x - 5, ant.y - 5, 11, 11);*/
 
-        dt += clock.restart().asSeconds();
-        while(dt > 0.002) {
-            app.update_all();
-            dt -= 0.002;
+            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Key::Space) {
+                if (!start && !event.key.shift) {
+                    world.update(rules);
+    
+                    update_textures();
+                }
+
+                start = event.key.shift ? !start : false;
+            } else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Key::Left) {
+                chunk_x--;
+
+                update_textures();
+            } else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Key::Right) {
+                chunk_x++;
+
+                update_textures();
+            } else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Key::Down) {
+                chunk_y++;
+
+                update_textures();
+            } else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Key::Up) {
+                chunk_y--;
+
+                update_textures();
+            }
         }
-        grid.update(app);
+
+        if (start) {
+            world.update(rules);
+            world.update(rules);
+            world.update(rules);
+            world.update(rules);
+            update_textures();
+        }
+
 
         window.clear();
-        window.draw(grid);
+        for(auto const& sprite : sprites) {
+            window.draw(sprite);
+        }
         window.display();
     }
 }

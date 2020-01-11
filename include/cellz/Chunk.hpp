@@ -12,7 +12,7 @@ namespace cellz {
 class Chunk {
 public:
 
-    Chunk(state_t const default_state, std::size_t const width, std::size_t const height);
+    Chunk(state_t const _default_state, std::size_t const _width, std::size_t const _height);
 
     state_t get(Position const& position) const;
     void set(Position const& position, state_t const state);
@@ -28,15 +28,15 @@ public:
 
     Neighbors get_neighbors(Position const& position) const;
 
-    void sync_hidden_north_border(Chunk const* from);
-    void sync_hidden_south_border(Chunk const* from);
-    void sync_hidden_east_border(Chunk const* from);
-    void sync_hidden_west_border(Chunk const* from);
+    void sync_hidden_north_border(Chunk const& from_chunk);
+    void sync_hidden_south_border(Chunk const& from_chunk);
+    void sync_hidden_east_border(Chunk const& from_chunk);
+    void sync_hidden_west_border(Chunk const& from_chunk);
 
-    void sync_hidden_north_west_corner(Chunk const* from);
-    void sync_hidden_south_west_corner(Chunk const* from);
-    void sync_hidden_south_east_corner(Chunk const* from);
-    void sync_hidden_north_east_corner(Chunk const* from);
+    void sync_hidden_north_west_corner(Chunk const& from_chunk);
+    void sync_hidden_south_west_corner(Chunk const& from_chunk);
+    void sync_hidden_south_east_corner(Chunk const& from_chunk);
+    void sync_hidden_north_east_corner(Chunk const& from_chunk);
 
     void to_texture(sf::Texture& texture, std::unordered_map<state_t, sf::Color> const& colors) const;
 

@@ -1,4 +1,4 @@
-#include <cellz/example/gol.hpp>
+/*#include <cellz/example/gol.hpp>
 #include <iostream>
 
 namespace cellz::example {
@@ -236,4 +236,4 @@ void GameOfLife::Patterns::place(Automate& app, sf::Vector2i pos, Automate::stat
 
 
 
-}
+}*/
